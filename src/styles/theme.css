@@ -1,0 +1,57 @@
+:root {
+  --background: #fffcf4;
+  --foreground: #123e46;
+  --card: #ffffff;
+  --card-foreground: #123e46;
+  --primary: #16a765;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f7ef;
+  --secondary-foreground: #123e46;
+  --muted: #f4f7f5;
+  --muted-foreground: #64748b;
+  --accent: #ffb52e;
+  --accent-foreground: #123e46;
+  --destructive: #dc5757;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #16a765;
+  --radius: 1rem;
+}
+.dark {
+  --background: #123e46;
+  --foreground: #fffcf4;
+  --card: #194b52;
+  --card-foreground: #ffffff;
+  --primary: #16a765;
+  --primary-foreground: #ffffff;
+  --secondary: #245b52;
+  --secondary-foreground: #e8f7ef;
+  --muted: #194b52;
+  --muted-foreground: #b7c9c5;
+  --accent: #ffb52e;
+  --accent-foreground: #123e46;
+  --destructive: #dc5757;
+  --border: #36626a;
+  --input: #36626a;
+  --ring: #16a765;
+}
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+}
