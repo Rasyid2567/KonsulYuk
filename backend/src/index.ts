@@ -71,7 +71,7 @@ app.onError((err, c) => {
 const PORT = parseInt(process.env.PORT || "5000")
 
 console.log(`
-🚀 KonsulYuk Backend Server (Deno / Bun + PostgreSQL)
+🚀 KonsulYuk Backend Server (Deno 2 + PostgreSQL)
 📡 Berjalan di: http://localhost:${PORT}
 🩺 Health Check: http://localhost:${PORT}/api/health
 ⚡ Siap melayani permintaan API!

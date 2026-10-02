@@ -18,51 +18,53 @@ KonsulYuk/
 │   ├── package.json
 │   └── vite.config.ts
 │
-└── 📂 backend/               # Backend Server Super Cepat (Bun.js, Hono, PostgreSQL, Prisma)
+└── 📂 backend/               # Backend Server Super Cepat (Deno 2, Hono, PostgreSQL, Prisma)
     ├── src/
-    │   ├── index.ts          # Server entrypoint Bun + Hono (Port 5000)
+    │   ├── index.ts          # Server entrypoint Deno + Hono (Port 5000)
     │   ├── middleware/       # Autentikasi JWT & Role Guard
     │   ├── routes/           # REST API: auth, consultations, messages, notifications, users
     │   └── lib/prisma.ts     # PostgreSQL ORM Client
     ├── prisma/
     │   ├── schema.prisma     # Skema database PostgreSQL
     │   └── seed.ts           # Seeder data demo siswa & guru BK
+    ├── deno.json             # Task manager Deno (dev, start, db, pm2)
     ├── .env                  # Konfigurasi database & port
     └── package.json
 ```
 
 ---
 
-## 🚀 Cara Menjalankan Backend (Bun.js ⚡)
+## 🚀 Cara Menjalankan Backend (Deno 2 ⚡)
 
-Backend menggunakan **Bun.js** dan framework **Hono** untuk performa maksimal serta latensi sub-milidetik.
+Backend menggunakan **Deno 2**, framework **Hono**, dan **Prisma ORM** yang terhubung ke **PostgreSQL**. Sangat ringan, cepat, dan kompatibel dengan semua jenis CPU server Linux.
 
 1. **Masuk ke folder backend:**
    ```bash
    cd backend
    ```
 
-2. **Pastikan PostgreSQL sudah aktif dan database `konsulyuk_db` tersedia:**
+2. **Siapkan environment:**
    ```bash
-   # Database konsulyuk_db sudah dibuat dan disinkronkan
+   cp .env.example .env
+   # Sesuaikan DATABASE_URL dan JWT_SECRET di file .env
    ```
 
 3. **Sinkronisasi Skema Database & Seeding Data Demo (jika diperlukan ulang):**
    ```bash
-   bun run db:push
-   bun run db:seed
+   deno task db:push
+   deno task db:seed
    ```
 
 4. **Jalankan Backend Server:**
    ```bash
-   bun run dev
+   deno task dev
    ```
    > Server akan berjalan di: **`http://localhost:5000`**  
    > Health check: **`http://localhost:5000/api/health`**
 
 5. **(Opsional) Buka Prisma Studio (GUI Database Viewer):**
    ```bash
-   bun run db:studio
+   deno task db:studio
    ```
    > Buka di browser: **`http://localhost:5555`** untuk melihat data PostgreSQL secara visual.
 
@@ -78,8 +80,8 @@ Backend menggunakan **Bun.js** dan framework **Hono** untuk performa maksimal se
 2. **Jalankan dev server:**
    ```bash
    npm run dev
-   # atau menggunakan bun:
-   bun run dev
+   # atau menggunakan pnpm:
+   # pnpm dev
    ```
    > Aplikasi frontend berjalan di port default Vite (misalnya `http://localhost:8443` atau `http://localhost:5173`).
 
