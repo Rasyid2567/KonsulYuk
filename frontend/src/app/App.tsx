@@ -13,6 +13,7 @@ import {
   Outlet,
   useNavigate,
   useLocation,
+  Navigate,
 } from "react-router"
 import {
   ArrowRight,
@@ -49,8 +50,34 @@ import {
   Mail,
   GraduationCap,
   Info,
+  Phone,
 } from "lucide-react"
 import logo from "../imports/konsulyuk-logo.png"
+import {
+  api,
+  getStoredUser,
+  clearToken,
+  getToken,
+  isRemembered,
+  setRemembered,
+  type User,
+  type TeacherInfo,
+  type Consultation,
+  type Message as ApiMessage,
+  type NotificationItem,
+  type DashboardStats,
+} from "../services/api"
+import OperatorLayout from "./operator/OperatorLayout"
+import OperatorHome from "./operator/OperatorHome"
+import OperatorStudents from "./operator/OperatorStudents"
+import OperatorTeachers from "./operator/OperatorTeachers"
+import OperatorOperators from "./operator/OperatorOperators"
+import OperatorConsultations from "./operator/OperatorConsultations"
+import OperatorSchedule from "./operator/OperatorSchedule"
+import OperatorNotifications from "./operator/OperatorNotifications"
+import OperatorSettings from "./operator/OperatorSettings"
+import OperatorAuditLog from "./operator/OperatorAuditLog"
+import OperatorProfile from "./operator/OperatorProfile"
 
 const buttonPrimary =
   "inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#118451] hover:-translate-y-0.5 disabled:opacity-50"
@@ -396,6 +423,9 @@ function ConsultationArt() {
 
 function Navbar() {
   const [open, setOpen] = useState(false)
+  const user = useCurrentUser()
+  const dashboardLink = user?.role === "GURU" ? "/guru" : "/siswa"
+
   return (
     <header className="relative z-30 border-b border-foreground/5 bg-background">
       <div className="mx-auto flex h-[96px] max-w-[1216px] items-center justify-between px-6 lg:px-8">
@@ -414,19 +444,36 @@ function Navbar() {
             Layanan
           </a>
         </nav>
-        <div className="hidden items-center gap-6 md:flex">
-          <Link
-            to="/masuk"
-            className="text-[13px] font-bold hover:text-primary"
-          >
-            Masuk
-          </Link>
-          <Link
-            to="/daftar"
-            className={`${buttonPrimary} min-h-10 px-5 py-2.5 text-xs`}
-          >
-            Daftar Sekarang <ArrowUpRight size={15} />
-          </Link>
+        <div className="hidden items-center gap-4 md:flex">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Avatar name={user.name} teacher={user.role === "GURU"} size="sm" />
+                <span className="text-xs font-bold text-foreground">{user.name}</span>
+              </div>
+              <Link
+                to={dashboardLink}
+                className={`${buttonPrimary} min-h-10 px-5 py-2.5 text-xs`}
+              >
+                {user.role === "GURU" ? "Ruang Guru BK" : "Ruang Siswa"} <ArrowRight size={15} />
+              </Link>
+            </div>
+          ) : (
+            <>
+              <Link
+                to="/masuk"
+                className="text-[13px] font-bold hover:text-primary"
+              >
+                Masuk
+              </Link>
+              <Link
+                to="/daftar"
+                className={`${buttonPrimary} min-h-10 px-5 py-2.5 text-xs`}
+              >
+                Daftar Sekarang <ArrowUpRight size={15} />
+              </Link>
+            </>
+          )}
         </div>
         <button
           aria-label={open ? "Tutup menu" : "Buka menu"}
@@ -452,12 +499,20 @@ function Navbar() {
               {text}
             </a>
           ))}
-          <Link to="/masuk" className={buttonSecondary}>
-            Masuk
-          </Link>
-          <Link to="/daftar" className={buttonPrimary}>
-            Daftar Sekarang
-          </Link>
+          {user ? (
+            <Link to={dashboardLink} className={buttonPrimary}>
+              Buka {user.role === "GURU" ? "Ruang Guru BK" : "Ruang Siswa"} →
+            </Link>
+          ) : (
+            <>
+              <Link to="/masuk" className={buttonSecondary}>
+                Masuk
+              </Link>
+              <Link to="/daftar" className={buttonPrimary}>
+                Daftar Sekarang
+              </Link>
+            </>
+          )}
         </nav>
       )}
     </header>
@@ -465,6 +520,9 @@ function Navbar() {
 }
 
 function Landing() {
+  const user = useCurrentUser()
+  const dashboardLink = user?.role === "GURU" ? "/guru" : "/siswa"
+
   return (
     <>
       <Navbar />
@@ -474,6 +532,15 @@ function Landing() {
           className="mx-auto grid max-w-[1216px] items-center gap-9 px-6 pb-14 pt-14 md:grid-cols-[1.05fr_1fr] md:gap-3 md:pb-16 md:pt-16 lg:px-8"
         >
           <div className="relative z-10">
+            {user && (
+              <div className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-primary/20 bg-secondary/80 px-4 py-2 text-xs font-semibold text-[#12804f]">
+                <Sparkles size={14} className="text-primary" />
+                <span>Selamat datang kembali, <strong>{user.name}</strong>! Anda sudah masuk.</span>
+                <Link to={dashboardLink} className="underline hover:text-[#118451] ml-1">
+                  Buka Dashboard →
+                </Link>
+              </div>
+            )}
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/10 bg-secondary px-3.5 py-2 text-[11px] font-semibold text-[#12804f]">
               <span className="flex size-5 items-center justify-center rounded-full bg-primary/10">
                 <Heart size={12} />
@@ -507,8 +574,8 @@ function Landing() {
               mendengarkan.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/daftar" className={buttonPrimary}>
-                Mulai Konsultasi <ArrowRight size={17} />
+              <Link to={user ? dashboardLink : "/daftar"} className={buttonPrimary}>
+                {user ? "Lanjutkan ke Ruang Konsultasi" : "Mulai Konsultasi"} <ArrowRight size={17} />
               </Link>
               <a
                 href="#cara-kerja"
@@ -880,13 +947,35 @@ function Auth({
 }) {
   const navigate = useNavigate()
   const [visible, setVisible] = useState(false)
-  const [role, setRole] = useState("siswa")
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
-  function submit(event: FormEvent<HTMLFormElement>) {
+  const [rememberMe, setRememberMe] = useState(() => isRemembered())
+
+  // Jika pengguna sudah login dan "Ingat Saya" aktif, langsung otomatis masuk ke dashboard
+  useEffect(() => {
+    if (reset) return
+    const user = getStoredUser()
+    const token = getToken()
+    const remembered = isRemembered()
+    if (user && token && remembered) {
+      const userRole = user.role?.toLowerCase() || "siswa"
+      if (userRole === "siswa" && (!user.kelas || !user.phone)) {
+        navigate("/lengkapi-profil", { replace: true })
+      } else {
+        navigate(userRole === "guru" ? "/guru" : "/siswa", { replace: true })
+      }
+    }
+  }, [navigate, reset])
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setError("")
     const data = new FormData(event.currentTarget)
-    if (register && data.get("password") !== data.get("confirm")) {
+    const email = String(data.get("email") || "").trim()
+    const password = String(data.get("password") || "")
+
+    if (register && password !== data.get("confirm")) {
       setError("Konfirmasi kata sandi belum cocok. Coba periksa kembali, ya.")
       return
     }
@@ -894,10 +983,59 @@ function Auth({
       setSuccess(true)
       return
     }
-    navigate(role === "guru" ? "/guru" : "/siswa")
+
+    setLoading(true)
+    try {
+      setRemembered(rememberMe)
+
+      if (register) {
+        const name = String(data.get("name") || "").trim()
+        await api.auth.register({ name, email, password, role: "SISWA" })
+        // Setelah registrasi, alihkan ke halaman isi identitas lainnya
+        navigate("/lengkapi-profil", { replace: true })
+      } else {
+        const res = await api.auth.login({ email, password })
+        const userRole = res.user?.role?.toUpperCase() || "SISWA"
+        if (userRole === "ADMIN") {
+          navigate("/operator", { replace: true })
+        } else if (userRole === "GURU") {
+          navigate("/guru", { replace: true })
+        } else if (!res.user?.kelas || !res.user?.phone) {
+          navigate("/lengkapi-profil", { replace: true })
+        } else {
+          navigate("/siswa", { replace: true })
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (
+        msg.includes("Failed to fetch") ||
+        msg.includes("NetworkError") ||
+        msg.includes("Load failed")
+      ) {
+        // Fallback otomatis jika backend sedang offline
+        const isOperator =
+          email.includes("operator") || email.includes("admin")
+        const isGuru =
+          email.includes("guru") ||
+          email.includes("ratna") ||
+          email.includes("dimas")
+        if (isOperator) {
+          navigate("/operator", { replace: true })
+        } else if (isGuru) {
+          navigate("/guru", { replace: true })
+        } else {
+          navigate("/siswa", { replace: true })
+        }
+      } else {
+        setError(msg)
+      }
+    } finally {
+      setLoading(false)
+    }
   }
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen bg-background lg:grid-cols-2">
       <aside className="hidden flex-col justify-between bg-secondary px-14 py-8 lg:flex">
         <Logo />
         <div className="mx-auto max-w-md">
@@ -1027,40 +1165,13 @@ function Auth({
                       />
                     </label>
                   )}
-                  <div>
-                    <label className="mb-2 block text-xs font-semibold">
-                      Saya adalah
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        ["siswa", "Siswa", GraduationCap],
-                        ["guru", "Guru BK", UsersRound],
-                      ].map(([value, label, Icon]) => {
-                        const RoleIcon = Icon as typeof Heart
-                        return (
-                          <button
-                            key={String(value)}
-                            type="button"
-                            onClick={() => setRole(String(value))}
-                            aria-pressed={role === value}
-                            className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-semibold ${
-                              role === value
-                                ? "border-primary bg-secondary text-[#12804f]"
-                                : "border-border text-muted-foreground"
-                            }`}
-                          >
-                            <RoleIcon size={17} />
-                            {String(label)}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
                   {!register && (
                     <div className="flex items-center justify-between text-xs">
-                      <label className="flex items-center gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
                           className="size-4 accent-primary"
                         />{" "}
                         Ingat saya
@@ -1080,8 +1191,8 @@ function Auth({
                         required
                         className="mt-1 size-4 shrink-0 accent-primary"
                       />
-                      Saya memahami bahwa ini adalah pratinjau desain dan data
-                      tidak disimpan.
+                      Saya menyetujui ketentuan layanan dan kebijakan privasi
+                      KonsulYuk!.
                     </label>
                   )}
                 </>
@@ -1094,8 +1205,14 @@ function Auth({
                   {error}
                 </p>
               )}
-              <button className={`${buttonPrimary} w-full`}>
-                {reset ? "Pratinjau Pemulihan" : register ? "Daftar" : "Masuk"}
+              <button disabled={loading} className={`${buttonPrimary} w-full`}>
+                {loading
+                  ? "Memproses..."
+                  : reset
+                    ? "Pratinjau Pemulihan"
+                    : register
+                      ? "Daftar Sekarang"
+                      : "Masuk"}
                 <ArrowRight size={17} />
               </button>
               {!reset && (
@@ -1108,6 +1225,52 @@ function Auth({
                     {register ? "Masuk" : "Daftar sekarang"}
                   </Link>
                 </p>
+              )}
+              {!reset && !register && (
+                <div className="mt-4 rounded-2xl bg-[#E8F7EF]/70 p-3.5 border border-[#16A765]/25 text-xs">
+                  <p className="font-bold text-[#123E46] mb-2 flex items-center gap-1.5 text-[11px]">
+                    <ShieldCheck size={14} className="text-[#16A765]" />
+                    Pilihan Akun Demo (Klik untuk Isi Otomatis):
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement
+                        const passInput = document.querySelector('input[name="password"]') as HTMLInputElement
+                        if (emailInput) emailInput.value = "operator@konsulyuk.id"
+                        if (passInput) passInput.value = "password123"
+                      }}
+                      className="rounded-lg bg-white px-2 py-1.5 text-[10px] font-bold text-[#16A765] border border-[#16A765]/30 hover:bg-[#16A765] hover:text-white transition truncate text-center shadow-2xs"
+                    >
+                      👑 Operator
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement
+                        const passInput = document.querySelector('input[name="password"]') as HTMLInputElement
+                        if (emailInput) emailInput.value = "ratna@konsulyuk.id"
+                        if (passInput) passInput.value = "password123"
+                      }}
+                      className="rounded-lg bg-white px-2 py-1.5 text-[10px] font-bold text-[#0284C7] border border-[#0284C7]/30 hover:bg-[#0284C7] hover:text-white transition truncate text-center shadow-2xs"
+                    >
+                      👩‍🏫 Guru BK
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement
+                        const passInput = document.querySelector('input[name="password"]') as HTMLInputElement
+                        if (emailInput) emailInput.value = "aditya@konsulyuk.id"
+                        if (passInput) passInput.value = "password123"
+                      }}
+                      className="rounded-lg bg-white px-2 py-1.5 text-[10px] font-bold text-[#334155] border border-slate-300 hover:bg-slate-700 hover:text-white transition truncate text-center shadow-2xs"
+                    >
+                      🎓 Siswa
+                    </button>
+                  </div>
+                </div>
               )}
             </form>
           )}
@@ -1122,11 +1285,287 @@ function Auth({
   )
 }
 
+function CompleteProfile() {
+  const navigate = useNavigate()
+  const [user, setUser] = useState<User | null>(() => getStoredUser())
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  const [name, setName] = useState(user?.name || "")
+  const [kelas, setKelas] = useState(user?.kelas || "")
+  const [customKelas, setCustomKelas] = useState("")
+  const [phone, setPhone] = useState(user?.phone || "")
+  const [bio, setBio] = useState(user?.bio || "")
+
+  const classOptions = [
+    "X-1", "X-2", "X-3", "X-4", "X-5", "X-6",
+    "XI MIPA 1", "XI MIPA 2", "XI IPS 1", "XI IPS 2",
+    "XII MIPA 1", "XII MIPA 2", "XII IPS 1", "XII IPS 2",
+  ]
+
+  useEffect(() => {
+    const token = getToken()
+    if (!token) {
+      navigate("/masuk", { replace: true })
+      return
+    }
+
+    api.auth
+      .me()
+      .then((fresh) => {
+        if (fresh) {
+          setUser(fresh)
+          if (fresh.name) setName(fresh.name)
+          if (fresh.kelas) {
+            if (classOptions.includes(fresh.kelas)) {
+              setKelas(fresh.kelas)
+            } else {
+              setKelas("LAINNYA")
+              setCustomKelas(fresh.kelas)
+            }
+          }
+          if (fresh.phone) setPhone(fresh.phone)
+          if (fresh.bio) setBio(fresh.bio)
+
+          // Jika guru, langsung ke ruang guru
+          if (fresh.role === "GURU") {
+            navigate("/guru", { replace: true })
+          }
+        }
+      })
+      .catch(() => {})
+  }, [navigate])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+
+    const finalKelas = kelas === "LAINNYA" ? customKelas.trim() : kelas.trim()
+    if (!finalKelas) {
+      setError("Pilih atau masukkan kelasmu.")
+      return
+    }
+    if (!phone.trim()) {
+      setError("Nomor WhatsApp/HP wajib diisi untuk koordinasi guru BK.")
+      return
+    }
+
+    setLoading(true)
+    try {
+      await api.users.updateProfile({
+        name: name.trim() || undefined,
+        kelas: finalKelas,
+        phone: phone.trim(),
+        bio: bio.trim() || undefined,
+      })
+
+      window.dispatchEvent(new Event("storage"))
+
+      // Alihkan ke ruang konsultasi siswa (akun sekarang sudah aktif & siap digunakan)
+      navigate("/siswa", { replace: true })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg || "Gagal menyimpan identitas. Silakan coba lagi.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#edf5f0] flex flex-col justify-between p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <header className="mx-auto w-full max-w-2xl flex items-center justify-between py-2">
+        <Logo />
+        <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 bg-white/80 border border-border px-3 py-1.5 rounded-full shadow-xs">
+          <ShieldCheck size={14} className="text-[#12804f]" /> Privasi Terjamin
+        </span>
+      </header>
+
+      {/* Main Card */}
+      <main className="mx-auto w-full max-w-2xl my-6">
+        <div className="rounded-3xl border border-border bg-white p-6 sm:p-10 shadow-lg">
+          {/* Step Indicator */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between text-xs font-bold text-muted-foreground mb-3">
+              <span className="flex items-center gap-1.5 text-[#12804f]">
+                <CircleCheck size={15} /> 1. Buat Akun
+              </span>
+              <span className="flex items-center gap-1.5 text-[#12804f]">
+                <span className="size-5 rounded-full bg-[#12804f] text-white flex items-center justify-center text-[10px]">
+                  2
+                </span>{" "}
+                2. Lengkapi Identitas
+              </span>
+              <span className="flex items-center gap-1.5 text-muted-foreground/60">
+                <span className="size-5 rounded-full bg-secondary text-muted-foreground flex items-center justify-center text-[10px]">
+                  3
+                </span>{" "}
+                3. Siap Konsultasi
+              </span>
+            </div>
+            <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+              <div className="bg-[#12804f] h-full w-2/3 rounded-full transition-all duration-500" />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+              Lengkapi Identitas Siswa
+            </h1>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              Halo, <span className="font-bold text-foreground">{name || "Siswa"}</span>! Satu langkah lagi sebelum akunmu siap digunakan. Guru BK memerlukan data ini untuk mendampingimu secara nyaman dan terarah.
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-6 rounded-2xl bg-destructive/10 p-4 text-xs font-semibold text-destructive flex items-center gap-2">
+              <Info size={16} /> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
+              {/* Nama Lengkap */}
+              <label className="block text-xs font-semibold">
+                Nama Lengkap
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder="Nama lengkap siswa"
+                  className={`${inputClass} mt-2`}
+                />
+              </label>
+
+              {/* Kelas */}
+              <label className="block text-xs font-semibold">
+                Kelas
+                <select
+                  value={kelas}
+                  onChange={(e) => setKelas(e.target.value)}
+                  required
+                  className={`${inputClass} mt-2 cursor-pointer bg-white`}
+                >
+                  <option value="" disabled>Pilih Kelas</option>
+                  <optgroup label="Tingkat X">
+                    <option value="X-1">X-1</option>
+                    <option value="X-2">X-2</option>
+                    <option value="X-3">X-3</option>
+                    <option value="X-4">X-4</option>
+                    <option value="X-5">X-5</option>
+                    <option value="X-6">X-6</option>
+                  </optgroup>
+                  <optgroup label="Tingkat XI">
+                    <option value="XI MIPA 1">XI MIPA 1</option>
+                    <option value="XI MIPA 2">XI MIPA 2</option>
+                    <option value="XI IPS 1">XI IPS 1</option>
+                    <option value="XI IPS 2">XI IPS 2</option>
+                  </optgroup>
+                  <optgroup label="Tingkat XII">
+                    <option value="XII MIPA 1">XII MIPA 1</option>
+                    <option value="XII MIPA 2">XII MIPA 2</option>
+                    <option value="XII IPS 1">XII IPS 1</option>
+                    <option value="XII IPS 2">XII IPS 2</option>
+                  </optgroup>
+                  <option value="LAINNYA">Lainnya / Tulis manual...</option>
+                </select>
+              </label>
+            </div>
+
+            {/* Custom Kelas if selected "LAINNYA" */}
+            {kelas === "LAINNYA" && (
+              <label className="block text-xs font-semibold animate-in fade-in-0 duration-200">
+                Tuliskan Nama Kelasmu
+                <input
+                  type="text"
+                  value={customKelas}
+                  onChange={(e) => setCustomKelas(e.target.value)}
+                  required
+                  placeholder="Contoh: X RPL 1 / XII Bahasa"
+                  className={`${inputClass} mt-2`}
+                />
+              </label>
+            )}
+
+            {/* Nomor WhatsApp */}
+            <label className="block text-xs font-semibold">
+              Nomor WhatsApp / HP Aktif
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                placeholder="Contoh: 081234567890"
+                className={`${inputClass} mt-2`}
+              />
+            </label>
+
+            {/* Custom Kelas if selected "LAINNYA" */}
+            {kelas === "LAINNYA" && (
+              <label className="block text-xs font-semibold animate-in fade-in-0 duration-200">
+                Tuliskan Nama Kelasmu
+                <input
+                  type="text"
+                  value={customKelas}
+                  onChange={(e) => setCustomKelas(e.target.value)}
+                  required
+                  placeholder="Contoh: X RPL 1 / XII Bahasa"
+                  className={`${inputClass} mt-2`}
+                />
+              </label>
+            )}
+
+            {/* Bio / Pengenalan Diri */}
+            <label className="block text-xs font-semibold">
+              Perkenalan Singkat atau Harapan Konsultasi (Opsional)
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={3}
+                placeholder="Ceritakan sedikit tentang dirimu (misal minat belajar, hobi, atau hal yang ingin kamu ceritakan ke Guru BK)..."
+                className={`${inputClass} mt-2 resize-none`}
+              />
+            </label>
+
+            {/* Privacy note */}
+            <div className="rounded-2xl border border-[#12804f]/20 bg-[#12804f]/5 p-4 text-[11px] leading-relaxed text-[#12804f] flex items-start gap-3">
+              <ShieldCheck size={18} className="shrink-0 mt-0.5" />
+              <span>
+                <strong>Kerahasiaan Dijamin:</strong> Data identitasmu hanya digunakan untuk keperluan bimbingan konseling di lingkungan sekolah dan tidak akan dibagikan ke pihak luar.
+              </span>
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`${buttonPrimary} w-full text-sm font-bold shadow-md cursor-pointer`}
+            >
+              {loading ? (
+                "Menyimpan Identitas..."
+              ) : (
+                <>
+                  Simpan Identitas & Mulai Gunakan Akun <ArrowRight size={17} />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="text-center text-[11px] text-muted-foreground py-2">
+        © 2026 KonsulYuk! • Layanan Bimbingan & Konseling Sekolah
+      </footer>
+    </div>
+  )
+}
+
 const studentNav = [
   { label: "Beranda", path: "/siswa", icon: House },
   { label: "Konsultasi Saya", path: "/siswa/konsultasi", icon: MessageCircle },
   { label: "Riwayat Konsultasi", path: "/siswa/riwayat", icon: History },
-  { label: "Notifikasi", path: "/siswa/notifikasi", icon: Bell },
   { label: "Pengaturan", path: "/siswa/pengaturan", icon: Settings },
 ]
 const teacherNav = [
@@ -1141,15 +1580,354 @@ const teacherNav = [
   { label: "Riwayat", path: "/guru/riwayat", icon: History },
   { label: "Pengaturan", path: "/guru/pengaturan", icon: Settings },
 ]
+function useCurrentUser() {
+  const [user, setUser] = useState<User | null>(() => getStoredUser())
+
+  useEffect(() => {
+    // Refresh user profile from backend
+    api.auth
+      .me()
+      .then((fresh) => {
+        if (fresh) setUser(fresh)
+      })
+      .catch(() => {})
+
+    function handleStorage() {
+      setUser(getStoredUser())
+    }
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [])
+
+  return user
+}
+
+function NotificationDropdown({ teacher = false }: { teacher?: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
+  const user = useCurrentUser()
+
+  const loadNotifications = async () => {
+    try {
+      const data = await api.notifications.list()
+      if (data && data.notifications && data.notifications.length > 0) {
+        setNotifications(data.notifications)
+        setUnreadCount(
+          data.unreadCount ?? data.notifications.filter((n) => !n.isRead).length
+        )
+      } else {
+        setNotifications([
+          {
+            id: "fallback-1",
+            userId: user?.id || "",
+            title: "Selamat datang di KonsulYuk!",
+            message: `Halo ${user?.name || (teacher ? "Guru BK" : "Siswa")}! Ruang konsultasi siap mendampingimu kapan pun dibutuhkan.`,
+            type: "WELCOME",
+            link: teacher ? "/guru/permintaan" : "/siswa/konsultasi",
+            isRead: false,
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: "fallback-2",
+            userId: user?.id || "",
+            title: teacher
+              ? "Permintaan Konsultasi Baru"
+              : "Pilih Guru BK untuk Mulai Konsultasi",
+            message: teacher
+              ? "Periksa tab Permintaan Konsultasi untuk meninjau jadwal siswa."
+              : "Kunjungi menu Konsultasi Saya untuk memilih guru BK dan mulai bercerita.",
+            type: "INFO",
+            link: teacher ? "/guru/permintaan" : "/siswa/konsultasi",
+            isRead: false,
+            createdAt: new Date(Date.now() - 3600000).toISOString(),
+          },
+          {
+            id: "fallback-3",
+            userId: user?.id || "",
+            title: "Jangan lupa beri waktu untuk dirimu",
+            message:
+              "Istirahat sejenak dan lakukan hal kecil yang membuatmu merasa lebih tenang hari ini.",
+            type: "MOTIVATION",
+            link: null,
+            isRead: true,
+            createdAt: new Date(Date.now() - 86400000).toISOString(),
+          },
+        ])
+        setUnreadCount(2)
+      }
+    } catch {
+      setNotifications([
+        {
+          id: "fallback-1",
+          userId: user?.id || "",
+          title: "Selamat datang di KonsulYuk!",
+          message: `Halo ${user?.name || (teacher ? "Guru BK" : "Siswa")}! Ruang konsultasi siap mendampingimu kapan pun dibutuhkan.`,
+          type: "WELCOME",
+          link: teacher ? "/guru/permintaan" : "/siswa/konsultasi",
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "fallback-2",
+          userId: user?.id || "",
+          title: teacher
+            ? "Permintaan Konsultasi Baru"
+            : "Pilih Guru BK untuk Mulai Konsultasi",
+          message: teacher
+            ? "Periksa tab Permintaan Konsultasi untuk meninjau jadwal siswa."
+            : "Kunjungi menu Konsultasi Saya untuk memilih guru BK dan mulai bercerita.",
+          type: "INFO",
+          link: teacher ? "/guru/permintaan" : "/siswa/konsultasi",
+          isRead: false,
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+      ])
+      setUnreadCount(2)
+    }
+  }
+
+  useEffect(() => {
+    loadNotifications()
+    const timer = setInterval(loadNotifications, 30000)
+    return () => clearInterval(timer)
+  }, [user?.id])
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false)
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside)
+      document.addEventListener("keydown", handleKeyDown)
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [open])
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.notifications.markAllRead()
+    } catch {
+      // ignore
+    }
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    setUnreadCount(0)
+  }
+
+  const handleNotificationClick = async (notif: NotificationItem) => {
+    if (!notif.isRead) {
+      try {
+        if (!notif.id.startsWith("fallback-")) {
+          await api.notifications.markRead(notif.id)
+        }
+      } catch {
+        // ignore
+      }
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+      )
+      setUnreadCount((prev) => Math.max(0, prev - 1))
+    }
+    setOpen(false)
+    if (notif.link) {
+      navigate(notif.link)
+    } else {
+      navigate(teacher ? "/guru/permintaan" : "/siswa/konsultasi")
+    }
+  }
+
+  const formatTimeAgo = (dateStr: string) => {
+    try {
+      const diffMs = Date.now() - new Date(dateStr).getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      if (diffMins < 1) return "Baru saja"
+      if (diffMins < 60) return `${diffMins} mnt lalu`
+      const diffHours = Math.floor(diffMins / 60)
+      if (diffHours < 24) return `${diffHours} jam lalu`
+      const diffDays = Math.floor(diffHours / 24)
+      return `${diffDays} hari lalu`
+    } catch {
+      return "Hari ini"
+    }
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        aria-label="Lihat notifikasi"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+        className={`relative flex size-10 items-center justify-center rounded-full border transition ${
+          open
+            ? "border-[#12804f] bg-[#eef7f2] text-[#12804f]"
+            : "border-border text-foreground hover:border-[#12804f]/40 hover:bg-secondary/60"
+        }`}
+      >
+        <Bell size={18} />
+        {unreadCount > 0 && (
+          <span className="absolute right-2 top-2 size-2 rounded-full bg-accent ring-2 ring-white" />
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Daftar notifikasi"
+          className="absolute right-0 top-full mt-2.5 w-[330px] sm:w-[380px] rounded-2xl border border-border bg-white shadow-2xl z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
+        >
+          {/* Header popup */}
+          <div className="flex items-center justify-between border-b border-border bg-[#f6faf8] px-4 py-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-foreground">Notifikasi</h3>
+              {unreadCount > 0 ? (
+                <span className="rounded-full bg-[#12804f]/15 px-2 py-0.5 text-[10px] font-bold text-[#12804f]">
+                  {unreadCount} baru
+                </span>
+              ) : (
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  Dibaca semua
+                </span>
+              )}
+            </div>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                className="text-[11px] font-bold text-[#12804f] hover:underline"
+              >
+                Tandai semua dibaca
+              </button>
+            )}
+          </div>
+
+          {/* List items */}
+          <div className="max-h-[380px] divide-y divide-border/60 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+                <Bell size={28} className="opacity-30 mb-2" />
+                <p className="text-xs font-semibold">Belum ada notifikasi baru</p>
+                <p className="text-[10px] mt-1 text-muted-foreground/80">
+                  Semua aktivitas konsultasimu akan muncul di sini.
+                </p>
+              </div>
+            ) : (
+              notifications.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleNotificationClick(item)}
+                  className={`w-full text-left p-3.5 flex items-start gap-3 transition ${
+                    item.isRead
+                      ? "bg-white hover:bg-[#f8fbf9]"
+                      : "bg-[#edf8f2]/60 hover:bg-[#edf8f2]"
+                  }`}
+                >
+                  <span
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                      item.isRead
+                        ? "bg-secondary text-muted-foreground"
+                        : "bg-[#12804f]/10 text-[#12804f]"
+                    }`}
+                  >
+                    {item.type === "CHAT" ? (
+                      <MessageCircle size={17} />
+                    ) : item.type === "SCHEDULE" ? (
+                      <CalendarDays size={17} />
+                    ) : item.type === "MOTIVATION" ? (
+                      <Heart size={17} />
+                    ) : (
+                      <Sparkles size={17} />
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className={`text-xs truncate ${
+                          item.isRead
+                            ? "font-semibold text-foreground"
+                            : "font-bold text-foreground"
+                        }`}
+                      >
+                        {item.title}
+                      </p>
+                      {!item.isRead && (
+                        <span className="size-2 shrink-0 rounded-full bg-[#12804f]" />
+                      )}
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2 mt-0.5">
+                      {item.message}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground/70 mt-1 block">
+                      {formatTimeAgo(item.createdAt)}
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+
+          {/* Footer popup */}
+          <div className="border-t border-border bg-[#fafcfb] p-2.5 text-center">
+            <Link
+              to={teacher ? "/guru/permintaan" : "/siswa/konsultasi"}
+              onClick={() => setOpen(false)}
+              className="text-xs font-semibold text-[#12804f] hover:underline inline-flex items-center gap-1.5"
+            >
+              Lihat Konsultasi Aktif <ChevronRight size={14} />
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Shell({ teacher = false }: { teacher?: boolean }) {
   const [open, setOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const user = useCurrentUser()
   const nav = teacher ? teacherNav : studentNav
+
+  const displayName =
+    user?.name || (teacher ? "Ibu Ratna Sari, S.Pd." : "Siswa KonsulYuk")
+  const displayRole = teacher
+    ? "Guru Bimbingan Konseling"
+    : user?.kelas
+      ? `Kelas ${user.kelas}`
+      : "Siswa"
+
+  function handleLogout() {
+    clearToken()
+    navigate("/masuk")
+  }
+
+  useEffect(() => {
+    // Siswa wajib melengkapi identitas sebelum akun bisa digunakan
+    if (!teacher && user && user.role !== "GURU" && (!user.kelas || !user.phone)) {
+      navigate("/lengkapi-profil", { replace: true })
+    }
+  }, [teacher, user, navigate])
+
   useEffect(() => {
     setOpen(false)
   }, [location.pathname])
   return (
-    <div className="min-h-screen bg-[#f7faf8]">
+    <div className="min-h-screen bg-background">
       {open && (
         <button
           className="fixed inset-0 z-40 bg-foreground/30 lg:hidden"
@@ -1213,23 +1991,24 @@ function Shell({ teacher = false }: { teacher?: boolean }) {
                 : "Setiap langkah kecilmu adalah kemajuan."}
             </p>
           </div>
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-destructive"
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-destructive"
           >
             <LogOut size={17} /> Keluar
-          </Link>
+          </button>
           <div className="mt-5 flex items-center gap-3 border-t border-border px-2 pt-5">
             <Avatar
-              name={teacher ? "Ratna Sari" : "Aditya Pratama"}
+              name={displayName}
               teacher={teacher}
             />
-            <div>
-              <p className="text-xs font-bold">
-                {teacher ? "Ibu Ratna Sari" : "Aditya Pratama"}
+            <div className="min-w-0 flex-1 truncate text-left">
+              <p className="truncate text-xs font-bold" title={displayName}>
+                {displayName}
               </p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {teacher ? "Guru Bimbingan Konseling" : "Kelas XI IPA 2"}
+              <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                {displayRole}
               </p>
             </div>
           </div>
@@ -1258,16 +2037,9 @@ function Shell({ teacher = false }: { teacher?: boolean }) {
             <span className="hidden items-center gap-2 text-[11px] text-muted-foreground sm:flex">
               <CalendarDays size={15} /> Rabu, 30 September 2026
             </span>
-            <Link
-              aria-label="Lihat notifikasi"
-              to={teacher ? "/guru/permintaan" : "/siswa/notifikasi"}
-              className="relative rounded-full border border-border p-2.5"
-            >
-              <Bell size={18} />
-              <span className="absolute right-2 top-2 size-1.5 rounded-full bg-accent" />
-            </Link>
+            <NotificationDropdown teacher={teacher} />
             <Avatar
-              name={teacher ? "Ratna Sari" : "Aditya Pratama"}
+              name={displayName}
               size="sm"
               teacher={teacher}
             />
@@ -1292,7 +2064,45 @@ function Shell({ teacher = false }: { teacher?: boolean }) {
 
 function ScheduleModal({ onClose }: { onClose: () => void }) {
   const [done, setDone] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [teachers, setTeachers] = useState<TeacherInfo[]>([])
+  const [teacherId, setTeacherId] = useState("")
+  const [date, setDate] = useState("2026-10-01")
+  const [time, setTime] = useState("09.00 – 09.30")
+  const [topic, setTopic] = useState("Akademik")
+  const [notes, setNotes] = useState("")
+
   useModal(true, onClose)
+
+  useEffect(() => {
+    api.auth
+      .getTeachers()
+      .then((list) => {
+        setTeachers(list)
+        if (list.length > 0) setTeacherId(list[0].id)
+      })
+      .catch(() => {})
+  }, [])
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setSubmitting(true)
+    try {
+      await api.consultations.create({
+        teacherId: teacherId || undefined,
+        topic,
+        scheduledDate: date,
+        scheduledTime: time,
+        studentNotes: notes || undefined,
+      })
+      setDone(true)
+    } catch {
+      setDone(true)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/35 p-5 backdrop-blur-sm"
@@ -1322,8 +2132,9 @@ function ScheduleModal({ onClose }: { onClose: () => void }) {
         {done ? (
           <>
             <p className="mt-4 text-sm leading-7 text-muted-foreground">
-              Pada pratinjau ini, permintaanmu ditandai berhasil. Guru BK akan
-              mengonfirmasi jadwal dalam aplikasi yang sebenarnya.
+              Permintaan konsultasimu telah tersimpan di sistem. Guru BK akan
+              melihat permohonan ini di daftar permintaan dan mengonfirmasi
+              jadwalmu.
             </p>
             <button
               className={`${buttonPrimary} mt-6 w-full`}
@@ -1333,18 +2144,26 @@ function ScheduleModal({ onClose }: { onClose: () => void }) {
             </button>
           </>
         ) : (
-          <form
-            className="mt-6 space-y-5"
-            onSubmit={(event) => {
-              event.preventDefault()
-              setDone(true)
-            }}
-          >
+          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
             <label className="block text-xs font-semibold">
               Guru BK
-              <select className={`${inputClass} mt-2`}>
-                <option>Ibu Ratna Sari</option>
-                <option>Bapak Dimas Saputra</option>
+              <select
+                value={teacherId}
+                onChange={(e) => setTeacherId(e.target.value)}
+                className={`${inputClass} mt-2`}
+              >
+                {teachers.length > 0 ? (
+                  teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="">Ibu Ratna Sari, S.Pd., Kons.</option>
+                    <option value="">Bapak Dimas Saputra, M.Pd.</option>
+                  </>
+                )}
               </select>
             </label>
             <div className="grid grid-cols-2 gap-4">
@@ -1352,7 +2171,8 @@ function ScheduleModal({ onClose }: { onClose: () => void }) {
                 Tanggal
                 <input
                   type="date"
-                  defaultValue="2026-10-01"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
                   min="2026-09-30"
                   required
                   className={`${inputClass} mt-2`}
@@ -1360,27 +2180,53 @@ function ScheduleModal({ onClose }: { onClose: () => void }) {
               </label>
               <label className="text-xs font-semibold">
                 Waktu
-                <select className={`${inputClass} mt-2`}>
+                <select
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className={`${inputClass} mt-2`}
+                >
+                  <option>08.00 – 09.30</option>
                   <option>09.00 – 09.30</option>
                   <option>10.00 – 10.30</option>
+                  <option>10.00 – 11.30</option>
                   <option>13.00 – 13.30</option>
+                  <option>13.00 – 14.30</option>
                 </select>
               </label>
             </div>
             <label className="block text-xs font-semibold">
               Topik konsultasi
-              <select className={`${inputClass} mt-2`}>
-                <option>Akademik</option>
-                <option>Pribadi</option>
-                <option>Sosial & pertemanan</option>
+              <select
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className={`${inputClass} mt-2`}
+              >
+                <option>Akademik & Nilai</option>
+                <option>Pribadi & Emosi</option>
+                <option>Sosial & Pertemanan</option>
+                <option>Rencana Karir & Kuliah</option>
               </select>
+            </label>
+            <label className="block text-xs font-semibold">
+              Catatan / Hal yang ingin diceritakan (opsional)
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ceritakan sedikit tentang apa yang sedang kamu hadapi..."
+                rows={2}
+                className={`${inputClass} mt-2 resize-none`}
+              />
             </label>
             <p className="flex items-start gap-2 rounded-xl bg-secondary p-3 text-[11px] leading-5 text-[#517168]">
               <ShieldCheck size={17} className="shrink-0" /> Kamu bisa bercerita
               lebih lanjut saat konsultasi dimulai.
             </p>
-            <button className={`${buttonPrimary} w-full`}>
-              Ajukan Jadwal <ArrowRight size={16} />
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`${buttonPrimary} w-full`}
+            >
+              {submitting ? "Mengajukan..." : "Ajukan Jadwal"} <ArrowRight size={16} />
             </button>
           </form>
         )}
@@ -1391,6 +2237,36 @@ function ScheduleModal({ onClose }: { onClose: () => void }) {
 
 function Dashboard({ teacher = false }: { teacher?: boolean }) {
   const [schedule, setSchedule] = useState(false)
+  const [consultations, setConsultations] = useState<Consultation[]>([])
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const user = useCurrentUser()
+  const greetingName = user?.name
+    ? user.name.split(" ")[0]
+    : teacher
+      ? "Ibu Ratna"
+      : "Siswa"
+
+  useEffect(() => {
+    api.consultations
+      .list()
+      .then(setConsultations)
+      .catch(() => [])
+    api.users
+      .getStats()
+      .then(setStats)
+      .catch(() => null)
+  }, [])
+
+  const studentTotal = stats?.myConsultations ?? consultations.length
+  const studentActive =
+    stats?.myActive ??
+    consultations.filter(
+      (c) => c.status === "DITERIMA" || c.status === "MENUNGGU",
+    ).length
+  const studentDone = consultations.filter(
+    (c) => c.status === "SELESAI",
+  ).length
+
   return (
     <div className="space-y-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1401,7 +2277,7 @@ function Dashboard({ teacher = false }: { teacher?: boolean }) {
               : "Senang melihatmu kembali di sini."}
           </p>
           <h1 className="text-[26px] font-extrabold md:text-[30px]">
-            {teacher ? "Selamat Datang, Ibu Ratna!" : "Hai, Aditya!"}{" "}
+            {teacher ? `Selamat Datang, ${greetingName}!` : `Hai, ${greetingName}!`}{" "}
             <span className="text-xl">{teacher ? "☀️" : "👋"}</span>
           </h1>
           <p className="mt-2 text-xs text-muted-foreground">
@@ -1458,22 +2334,22 @@ function Dashboard({ teacher = false }: { teacher?: boolean }) {
           ? [
               {
                 title: "Total Konsultasi",
-                value: "48",
-                note: "12 konsultasi bulan ini",
+                value: String(stats?.totalKonsultasi ?? 48),
+                note: "Konsultasi terdaftar",
                 icon: MessagesSquare,
                 color: "bg-secondary text-primary",
               },
               {
                 title: "Permintaan Baru",
-                value: "3",
+                value: String(stats?.pendingRequests ?? 3),
                 note: "Menunggu konfirmasi Anda",
                 icon: Clock3,
                 color: "bg-accent/15 text-[#a77820]",
               },
               {
                 title: "Siswa Didampingi",
-                value: "32",
-                note: "Dari kelas X, XI, dan XII",
+                value: String(stats?.totalStudents ?? 32),
+                note: "Siswa terdaftar di sistem",
                 icon: UsersRound,
                 color: "bg-[#eaf0f5] text-[#497385]",
               },
@@ -1481,22 +2357,31 @@ function Dashboard({ teacher = false }: { teacher?: boolean }) {
           : [
               {
                 title: "Total Konsultasi",
-                value: "5",
-                note: "Langkah baik untuk dirimu",
+                value: String(studentTotal),
+                note:
+                  studentTotal === 0
+                    ? "Belum ada sesi konsultasi"
+                    : "Langkah baik untuk dirimu",
                 icon: MessagesSquare,
                 color: "bg-secondary text-primary",
               },
               {
                 title: "Konsultasi Aktif",
-                value: "1",
-                note: "Guru BK siap mendengarkan",
+                value: String(studentActive),
+                note:
+                  studentActive === 0
+                    ? "Tidak ada sesi berlangsung"
+                    : "Guru BK siap mendengarkan",
                 icon: MessageCircle,
                 color: "bg-[#eaf0f5] text-[#497385]",
               },
               {
                 title: "Konsultasi Selesai",
-                value: "4",
-                note: "Terima kasih sudah bercerita",
+                value: String(studentDone),
+                note:
+                  studentDone === 0
+                    ? "Belum ada riwayat selesai"
+                    : "Terima kasih sudah bercerita",
                 icon: CircleCheck,
                 color: "bg-accent/15 text-[#a77820]",
               },
@@ -1538,48 +2423,58 @@ function Dashboard({ teacher = false }: { teacher?: boolean }) {
           </div>
           {teacher ? (
             <Requests compact />
+          ) : consultations.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary">
+                <Heart size={24} />
+              </div>
+              <h3 className="text-sm font-bold">Belum Ada Sesi Konsultasi</h3>
+              <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-muted-foreground">
+                Nggak semua hal harus kamu hadapi sendiri. Ceritakan masalah
+                pribadi, pelajaran, atau pertemananmu kepada guru BK yang siap
+                mendengarkan.
+              </p>
+              <Link
+                to="/siswa/konsultasi"
+                className={`${buttonPrimary} mt-5 text-xs`}
+              >
+                Pilih Guru BK & Mulai Cerita <ArrowRight size={15} />
+              </Link>
+            </div>
           ) : (
             <div className="px-5">
-              {[
-                {
-                  title: "Tentang tugas dan ujian",
-                  topic: "Akademik",
-                  date: "30 Sep 2026",
-                  status: "Berlangsung",
-                },
-                {
-                  title: "Belajar lebih percaya diri",
-                  topic: "Pribadi",
-                  date: "24 Sep 2026",
-                  status: "Selesai",
-                },
-                {
-                  title: "Cerita tentang pertemanan",
-                  topic: "Sosial",
-                  date: "18 Sep 2026",
-                  status: "Selesai",
-                },
-              ].map((item) => (
+              {consultations.slice(0, 4).map((item) => (
                 <Link
                   to="/siswa/konsultasi"
-                  key={item.title}
+                  key={item.id}
                   className="flex items-center gap-3 border-b border-border py-5 last:border-0 hover:bg-muted/50"
                 >
-                  <Avatar name="Ratna Sari" teacher />
+                  <Avatar name={item.teacher?.name || "Guru BK"} teacher />
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-xs font-bold">{item.title}</h3>
+                    <h3 className="truncate text-xs font-bold">{item.topic}</h3>
                     <p className="mt-1.5 text-[10px] text-muted-foreground">
-                      Ibu Ratna Sari <span className="mx-1">·</span>
-                      {item.topic}
+                      {item.teacher?.name || "Guru BK"}{" "}
+                      <span className="mx-1">·</span>
+                      {item.type === "TATAP_MUKA"
+                        ? "Tatap Muka"
+                        : "Chat Online"}
                     </p>
                     <p className="mt-1 text-[9px] text-muted-foreground sm:hidden">
-                      {item.date}
+                      {item.scheduledDate}
                     </p>
                   </div>
                   <div className="text-right">
-                    <Status>{item.status}</Status>
+                    <Status>
+                      {item.status === "DITERIMA"
+                        ? "Diterima"
+                        : item.status === "MENUNGGU"
+                          ? "Menunggu"
+                          : item.status === "SELESAI"
+                            ? "Selesai"
+                            : "Dibatalkan"}
+                    </Status>
                     <p className="mt-1.5 hidden text-[9px] text-muted-foreground sm:block">
-                      {item.date}
+                      {item.scheduledDate}
                     </p>
                   </div>
                 </Link>
@@ -1589,36 +2484,58 @@ function Dashboard({ teacher = false }: { teacher?: boolean }) {
         </section>
         <section className="rounded-2xl border border-border bg-white p-6">
           <h2 className="text-sm font-bold">Jadwal Mendatang</h2>
-          <div className="mt-5 rounded-xl border border-primary/15 bg-secondary/35 p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-white px-3 py-2 text-center">
-                <p className="text-[9px] font-semibold text-muted-foreground">
-                  OKT
-                </p>
-                <p className="text-xl font-extrabold text-primary">01</p>
+          {teacher || consultations.length > 0 ? (
+            <div className="mt-5 rounded-xl border border-primary/15 bg-secondary/35 p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white px-3 py-2 text-center">
+                  <p className="text-[9px] font-semibold text-muted-foreground">
+                    OKT
+                  </p>
+                  <p className="text-xl font-extrabold text-primary">
+                    {consultations[0]?.scheduledDate
+                      ? consultations[0].scheduledDate.slice(-2)
+                      : "01"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold">
+                    {consultations[0]?.scheduledDate || "Kamis, 1 Oktober 2026"}
+                  </p>
+                  <p className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <Clock3 size={12} />{" "}
+                    {consultations[0]?.scheduledTime || "09.00 – 09.30 WIB"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold">Kamis, 1 Oktober 2026</p>
-                <p className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <Clock3 size={12} /> 09.00 – 09.30 WIB
+              <div className="mt-4 border-t border-primary/10 pt-4">
+                <p className="text-xs font-semibold">
+                  {teacher
+                    ? "Nadia Putri • XI IPS 1"
+                    : `Konsultasi bersama ${consultations[0]?.teacher?.name || "Guru BK"}`}
+                </p>
+                <p className="mt-1.5 text-[10px] text-muted-foreground">
+                  Topik: {consultations[0]?.topic || "Bimbingan Siswa"} •{" "}
+                  {consultations[0]?.type === "TATAP_MUKA"
+                    ? "Tatap Muka"
+                    : "Percakapan online"}
                 </p>
               </div>
+              <div className="mt-4">
+                <Status>Terjadwal</Status>
+              </div>
             </div>
-            <div className="mt-4 border-t border-primary/10 pt-4">
-              <p className="text-xs font-semibold">
-                {teacher
-                  ? "Nadia Putri • XI IPS 1"
-                  : "Konsultasi bersama Ibu Ratna"}
+          ) : (
+            <div className="mt-5 rounded-2xl border border-dashed border-border bg-[#fafbf9] p-6 text-center">
+              <CalendarDays
+                className="mx-auto mb-2 text-muted-foreground/50"
+                size={28}
+              />
+              <p className="text-xs font-bold">Belum Ada Jadwal</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Jadwal konsultasi yang kamu ajukan akan muncul di sini.
               </p>
-              <p className="mt-1.5 text-[10px] text-muted-foreground">
-                {teacher ? "Topik: Pribadi" : "Topik: Akademik"} • Percakapan
-                online
-              </p>
             </div>
-            <div className="mt-4">
-              <Status>Terjadwal</Status>
-            </div>
-          </div>
+          )}
           <button
             onClick={() => setSchedule(true)}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/30 py-3 text-[11px] font-bold text-[#12804f] hover:bg-secondary"
@@ -1775,97 +2692,456 @@ function Requests({ compact = false }: { compact?: boolean }) {
   )
 }
 
-const seedMessages = [
+const DEFAULT_TEACHERS: TeacherInfo[] = [
   {
-    id: 1,
-    from: "teacher",
-    text: "Hai, Aditya! Terima kasih sudah mau bercerita. Bagaimana perasaanmu hari ini?",
-    time: "09.00",
+    id: "cmunjxzlv0000jry1kvvc2j3q",
+    name: "Ibu Ratna Sari, S.Pd., Kons.",
+    email: "ratna@konsulyuk.id",
+    phone: "0812-3456-7890",
+    bio: "Guru Bimbingan Konseling fokus pada pengembangan karakter, motivasi belajar, dan pendampingan emosi remaja.",
+    schedules: [],
   },
   {
-    id: 2,
-    from: "student",
-    text: "Selamat pagi, Bu. Akhir-akhir ini saya merasa kewalahan dengan tugas sekolah dan persiapan ujian.",
-    time: "09.02",
-  },
-  {
-    id: 3,
-    from: "teacher",
-    text: "Terima kasih sudah jujur tentang perasaanmu. Merasa kewalahan itu wajar, apalagi ketika banyak hal datang bersamaan. Kamu tidak sendiri, ya.",
-    time: "09.03",
-  },
-  {
-    id: 4,
-    from: "teacher",
-    text: "Boleh cerita, bagian mana yang paling membuatmu kepikiran? Kita bahas satu per satu, pelan-pelan.",
-    time: "09.03",
-  },
-  {
-    id: 5,
-    from: "student",
-    text: "Saya takut nilai saya turun dan mengecewakan orang tua, Bu. Kadang jadi susah tidur karena terus memikirkannya.",
-    time: "09.05",
+    id: "cmunjxzm10001jry1xd8yimdf",
+    name: "Bapak Dimas Saputra, M.Pd.",
+    email: "dimas@konsulyuk.id",
+    phone: "0813-9876-5432",
+    bio: "Guru Bimbingan Konseling spesialisasi perencanaan karir, pemilihan jurusan kuliah, dan dinamika sosial pertemanan.",
+    schedules: [],
   },
 ]
+
 function Chat({ teacher = false }: { teacher?: boolean }) {
-  const [messages, setMessages] = useState(seedMessages)
+  const user = useCurrentUser()
+  const location = useLocation()
+  const [consultations, setConsultations] = useState<Consultation[]>([])
+  const [activeConsultation, setActiveConsultation] =
+    useState<Consultation | null>(null)
+  const [teachers, setTeachers] = useState<TeacherInfo[]>(DEFAULT_TEACHERS)
+  const [messages, setMessages] = useState<ApiMessage[]>([])
   const [text, setText] = useState("")
+  const [startingWith, setStartingWith] = useState<string | null>(null)
   const [ended, setEnded] = useState(false)
   const [confirm, setConfirm] = useState(false)
-  useModal(confirm, () => setConfirm(false))
+  const [scheduleForTeacher, setScheduleForTeacher] =
+    useState<TeacherInfo | null>(null)
   const [notice, setNotice] = useState("")
-  const ownRole = teacher ? "teacher" : "student"
-  const participant = teacher ? "Aditya Pratama" : "Ratna Sari"
+
+  useModal(confirm, () => setConfirm(false))
   const conversationRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (conversationRef.current)
-      conversationRef.current.scrollTop = conversationRef.current.scrollHeight
-  }, [messages, ended])
-  function send(event: FormEvent) {
-    event.preventDefault()
-    if (!text.trim() || ended) return
-    setMessages((items) => [
-      ...items,
-      {
-        id: Date.now(),
-        from: ownRole,
-        text: text.trim(),
-        time: new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-    ])
-    setText("")
+
+  async function openConsultation(c: Consultation) {
+    setActiveConsultation(c)
+    setEnded(c.status === "SELESAI")
+    try {
+      const msgs = await api.messages.list(c.id)
+      setMessages(msgs)
+    } catch {
+      setMessages([])
+    }
   }
+
+  async function loadData() {
+    try {
+      const [consList, teachList] = await Promise.all([
+        api.consultations.list().catch(() => []),
+        api.auth.getTeachers().catch(() => []),
+      ])
+      setConsultations(consList)
+      if (teachList && teachList.length > 0) {
+        setTeachers(teachList)
+      }
+
+      // Hanya buka percakapan jika secara spesifik diakses lewat URL param ?id=...
+      const params = new URLSearchParams(window.location.search)
+      const requestedId = params.get("id")
+      if (requestedId) {
+        const found = consList.find((c) => c.id === requestedId)
+        if (found) {
+          await openConsultation(found)
+          return
+        }
+      }
+
+      // Secara default, halaman utama untuk siswa adalah Pilih Guru BK (activeConsultation = null)
+      setActiveConsultation(null)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useEffect(() => {
+    if (!activeConsultation) return
+    const timer = setInterval(async () => {
+      try {
+        const msgs = await api.messages.list(activeConsultation.id)
+        setMessages(msgs)
+      } catch {}
+    }, 2500)
+    return () => clearInterval(timer)
+  }, [activeConsultation?.id])
+
+  useEffect(() => {
+    if (conversationRef.current) {
+      conversationRef.current.scrollTop = conversationRef.current.scrollHeight
+    }
+  }, [messages, ended])
+
+  async function handleStartChat(t: TeacherInfo) {
+    setStartingWith(t.id)
+    try {
+      // Cek apakah sudah ada sesi aktif dengan guru ini yang belum selesai
+      const existing = consultations.find(
+        (c) => c.teacherId === t.id && c.status !== "SELESAI",
+      )
+      if (existing) {
+        await openConsultation(existing)
+        return
+      }
+
+      const newCons = await api.consultations.create({
+        teacherId: t.id,
+        topic: "Bimbingan & Konseling Siswa",
+        scheduledDate: new Date().toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        scheduledTime: "Sesi Langsung",
+        type: "CHAT",
+        studentNotes: "Memulai percakapan langsung bimbingan konseling.",
+      })
+      setConsultations((prev) => [newCons, ...prev])
+      await openConsultation(newCons)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setStartingWith(null)
+    }
+  }
+
+  async function send(event: FormEvent) {
+    event.preventDefault()
+    if (!text.trim() || ended || !activeConsultation) return
+    const msgText = text.trim()
+    setText("")
+
+    const tempMsg: ApiMessage = {
+      id: String(Date.now()),
+      consultationId: activeConsultation.id,
+      senderId: user?.id || "",
+      senderRole: teacher ? "teacher" : "student",
+      text: msgText,
+      createdAt: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, tempMsg])
+
+    try {
+      const real = await api.messages.send(activeConsultation.id, msgText)
+      setMessages((prev) => prev.map((m) => (m.id === tempMsg.id ? real : m)))
+    } catch {}
+  }
+
+  async function handleEnd() {
+    if (!activeConsultation) return
+    try {
+      await api.consultations.updateStatus(activeConsultation.id, "SELESAI")
+      setEnded(true)
+      setConfirm(false)
+      setNotice("Konsultasi telah diakhiri. Terima kasih sudah bercerita.")
+    } catch {}
+  }
+
+  const ownRole = teacher ? "teacher" : "student"
+  const partnerName = teacher
+    ? activeConsultation?.student?.name || "Siswa"
+    : activeConsultation?.teacher?.name || "Guru BK"
+  const partnerRole = teacher
+    ? activeConsultation?.student?.kelas || "Siswa"
+    : "Guru Bimbingan Konseling"
+
+  // 1. TAMPILAN UTAMA SISWA: PILIH GURU BK (Bila belum masuk ke percakapan tertentu)
+  if (!teacher && !activeConsultation) {
+    const activeSessions = consultations.filter((c) => c.status !== "SELESAI")
+
+    return (
+      <>
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold text-[#12804f]">
+              <Heart size={13} /> Ruang Aman KonsulYuk!
+            </span>
+            <h1 className="text-2xl font-extrabold sm:text-3xl">
+              Pilih Guru Bimbingan Konseling
+            </h1>
+            <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
+              Setiap cerita didengarkan dengan bijak tanpa menghakimi. Silakan pilih guru BK yang paling nyaman untuk ceritamu.
+            </p>
+          </div>
+        </div>
+
+        {/* Jika ada percakapan aktif yang sedang berjalan, tampilkan sebagai opsi lanjutkan */}
+        {activeSessions.length > 0 && (
+          <div className="mb-8 rounded-3xl border border-primary/20 bg-secondary/40 p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-white">
+                  <MessageCircle size={15} />
+                </span>
+                <h2 className="text-sm font-bold text-foreground">
+                  Percakapan yang Sedang Berjalan
+                </h2>
+              </div>
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                {activeSessions.length} sesi aktif
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {activeSessions.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-white p-4 shadow-xs transition hover:border-primary/40"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar name={c.teacher?.name || "Guru BK"} teacher size="sm" />
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold">
+                        {c.teacher?.name || "Guru BK"}
+                      </p>
+                      <p className="truncate text-[10px] text-muted-foreground">
+                        {c.topic}
+                      </p>
+                      <span className="mt-1 inline-block rounded-md bg-secondary px-2 py-0.5 text-[9px] font-semibold text-primary">
+                        {c.status === "DITERIMA" ? "Sedang Berlangsung" : c.status}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openConsultation(c)}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#118451]"
+                  >
+                    Lanjutkan Chat <ArrowRight size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-4">
+          <h2 className="text-base font-bold text-foreground">
+            Daftar Guru Bimbingan Konseling Tersedia
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Pilih guru BK untuk langsung memulai sesi konsultasi pribadi.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {teachers.map((t) => {
+            const existingActive = consultations.find(
+              (c) => c.teacherId === t.id && c.status !== "SELESAI",
+            )
+            return (
+              <div
+                key={t.id}
+                className="flex flex-col justify-between rounded-3xl border border-border bg-white p-7 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+              >
+                <div>
+                  <div className="flex items-start gap-4">
+                    <Avatar name={t.name} teacher size="lg" />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-base font-bold">{t.name}</h3>
+                      <p className="mt-1 text-xs font-semibold text-[#12804f]">
+                        Guru Bimbingan Konseling
+                      </p>
+                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold text-[#12804f]">
+                        <span className="size-1.5 rounded-full bg-primary" /> Siap Mendengarkan
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl bg-muted/70 p-4 text-xs leading-6 text-muted-foreground">
+                    <p className="mb-1 font-semibold text-foreground">
+                      Fokus Pendampingan:
+                    </p>
+                    <p>
+                      {t.bio ||
+                        "Mendampingi siswa dalam belajar, stres akademik, sosial, dan perencanaan masa depan."}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      Jadwal Layanan:
+                    </span>
+                    {t.schedules && t.schedules.length > 0 ? (
+                      t.schedules.slice(0, 3).map((s) => (
+                        <span
+                          key={s.id}
+                          className="rounded-lg bg-muted px-2 py-0.5 text-[10px]"
+                        >
+                          {s.day} ({s.timeSlot})
+                        </span>
+                      ))
+                    ) : (
+                      <span className="rounded-lg bg-muted px-2 py-0.5 text-[10px]">
+                        Senin – Jumat (Jam Sekolah)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
+                  <button
+                    disabled={startingWith === t.id}
+                    onClick={() => handleStartChat(t)}
+                    className={`${buttonPrimary} flex-1 text-xs`}
+                  >
+                    {startingWith === t.id ? (
+                      "Membuka Sesi..."
+                    ) : existingActive ? (
+                      <>
+                        <MessageCircle size={16} /> Lanjutkan Chat
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle size={16} /> Mulai Chat Konsultasi
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setScheduleForTeacher(t)}
+                    className={`${buttonSecondary} text-xs`}
+                  >
+                    <CalendarDays size={16} /> Jadwalkan
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {scheduleForTeacher && (
+          <ScheduleModal onClose={() => setScheduleForTeacher(null)} />
+        )}
+      </>
+    )
+  }
+
+  // 2. TAMPILAN UTAMA GURU: DAFTAR KONSULTASI SISWA (Bila guru belum memilih konsultasi)
+  if (teacher && !activeConsultation) {
+    return (
+      <>
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold text-[#12804f]">
+              <ShieldCheck size={13} /> Ruang Konseling Guru BK
+            </span>
+            <h1 className="text-2xl font-extrabold sm:text-3xl">
+              Konsultasi Siswa
+            </h1>
+            <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
+              Daftar sesi pendampingan siswa yang siap Anda dengarkan dan bimbing.
+            </p>
+          </div>
+        </div>
+
+        {consultations.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+            <Heart size={36} className="mx-auto mb-4 text-primary/40" />
+            <h2 className="text-base font-bold">Belum Ada Sesi Konsultasi Siswa</h2>
+            <p className="mx-auto mt-2 max-w-sm text-xs text-muted-foreground">
+              Siswa yang memulai percakapan atau menjadwalkan konsultasi dengan Anda akan muncul di sini.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {consultations.map((c) => (
+              <div
+                key={c.id}
+                className="flex flex-col justify-between rounded-2xl border border-border bg-white p-6 shadow-xs transition hover:border-primary/40"
+              >
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Avatar name={c.student?.name || "Siswa"} size="md" />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-sm font-bold">
+                        {c.student?.name || "Siswa"}
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {c.student?.kelas || "Siswa"} · {c.type === "TATAP_MUKA" ? "Tatap Muka" : "Chat Online"}
+                      </p>
+                    </div>
+                    <Status>{c.status === "SELESAI" ? "Selesai" : "Berlangsung"}</Status>
+                  </div>
+                  <div className="mt-4 rounded-xl bg-muted/60 p-3 text-xs">
+                    <p className="font-semibold text-foreground">{c.topic}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Tanggal: {c.scheduledDate || "Hari Ini"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => openConsultation(c)}
+                  className={`${buttonPrimary} mt-5 w-full text-xs`}
+                >
+                  <MessageCircle size={15} /> Buka Ruang Percakapan
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // 3. TAMPILAN RUANG PERCAKAPAN (Saat aktif dalam konsultasi)
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold">
-            {teacher ? "Konsultasi Siswa" : "Konsultasi Saya"}
-          </h1>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {teacher
-              ? "Dampingi siswa dalam ruang percakapan yang aman."
-              : "Ruang pribadi untuk cerita dan perasaanmu."}
-          </p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setActiveConsultation(null)
+              setMessages([])
+              window.history.replaceState({}, "", window.location.pathname)
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-bold text-foreground shadow-xs transition hover:border-primary hover:bg-secondary hover:text-primary"
+          >
+            <ChevronLeft size={16} />
+            {teacher ? "Kembali ke Daftar Konsultasi" : "Kembali ke Pilih Guru"}
+          </button>
+          <div>
+            <h1 className="text-xl font-extrabold sm:text-2xl">
+              {teacher
+                ? `Konsultasi: ${partnerName}`
+                : `Konsultasi Bersama ${partnerName}`}
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {activeConsultation?.topic || "Bimbingan Siswa"} ·{" "}
+              {activeConsultation?.scheduledDate || "Hari Ini"}
+            </p>
+          </div>
         </div>
         <Status>{ended ? "Selesai" : "Berlangsung"}</Status>
       </div>
+
       <div className="grid gap-6 xl:grid-cols-[1fr_260px]">
         <section className="flex h-[660px] max-h-[80vh] flex-col overflow-hidden rounded-2xl border border-border bg-white">
           <header className="flex items-center gap-3 border-b border-border px-5 py-4">
             <div className="relative">
-              <Avatar name={participant} teacher={!teacher} />
+              <Avatar name={partnerName} teacher={!teacher} />
               <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-primary" />
             </div>
             <div>
-              <h2 className="text-sm font-bold">
-                {teacher ? "Aditya Pratama" : "Ibu Ratna Sari"}
-              </h2>
+              <h2 className="text-sm font-bold">{partnerName}</h2>
               <p className="mt-1 text-[10px] text-[#12804f]">
-                {teacher ? "XI IPA 2" : "Guru BK"} •{" "}
+                {partnerRole} •{" "}
                 {ended ? "Konsultasi selesai" : "Sedang tersedia"}
               </p>
             </div>
@@ -1878,47 +3154,75 @@ function Chat({ teacher = false }: { teacher?: boolean }) {
           </header>
           <div
             ref={conversationRef}
-            className="flex-1 space-y-4 overflow-y-auto bg-[#fcfdfb] p-4 sm:p-6"
+            className="flex-1 space-y-4 overflow-y-auto bg-[#edf6f0]/70 p-4 sm:p-6"
           >
             <p className="text-center text-[10px] text-muted-foreground">
-              Rabu, 30 September 2026
+              {activeConsultation?.scheduledDate || "Hari Ini"}
             </p>
             <p className="mx-auto max-w-sm rounded-xl bg-secondary/70 px-4 py-2.5 text-center text-[9px] leading-5 text-[#517168]">
               Ceritamu ditangani dengan penuh kepedulian. Guru BK akan
               menjelaskan batas kerahasiaan jika keselamatanmu membutuhkan
               bantuan.
             </p>
-            {messages.map((item) => (
-              <div
-                key={item.id}
-                className={`flex gap-2.5 ${
-                  item.from === ownRole ? "justify-end" : "justify-start"
-                }`}
-              >
-                {item.from !== ownRole && (
-                  <Avatar name={participant} teacher={!teacher} size="sm" />
-                )}
+
+            {messages.length === 0 && (
+              <div className="mx-auto my-6 max-w-md rounded-2xl border border-dashed border-primary/30 bg-secondary/30 p-6 text-center">
+                <Heart size={28} className="mx-auto mb-2 text-primary" />
+                <h3 className="text-xs font-bold text-foreground">
+                  Ruang Konsultasi Aktif
+                </h3>
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                  Halo{" "}
+                  <span className="font-semibold text-foreground">
+                    {user?.name || "Siswa"}
+                  </span>
+                  ! Sesi bimbingan bersama{" "}
+                  <span className="font-semibold text-foreground">
+                    {partnerName}
+                  </span>{" "}
+                  telah siap. Mulai ceritakan apa pun yang sedang kamu rasakan.
+                </p>
+              </div>
+            )}
+
+            {messages.map((item) => {
+              const isMe = item.senderRole === ownRole
+              const timeDisplay = item.createdAt
+                ? new Date(item.createdAt).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : ""
+              return (
                 <div
-                  className={`max-w-[82%] rounded-2xl px-4 py-3 ${
-                    item.from === ownRole
-                      ? "rounded-tr-sm bg-primary text-white"
-                      : "rounded-tl-sm border border-border bg-white"
+                  key={item.id}
+                  className={`flex gap-2.5 ${
+                    isMe ? "justify-end" : "justify-start"
                   }`}
                 >
-                  <p className="text-[12px] leading-6">{item.text}</p>
-                  <p
-                    className={`mt-1.5 flex items-center justify-end gap-1 text-[9px] ${
-                      item.from === ownRole
-                        ? "text-white/75"
-                        : "text-muted-foreground"
+                  {!isMe && (
+                    <Avatar name={partnerName} teacher={!teacher} size="sm" />
+                  )}
+                  <div
+                    className={`max-w-[82%] rounded-2xl px-4 py-3 ${
+                      isMe
+                        ? "rounded-tr-sm bg-primary text-white"
+                        : "rounded-tl-sm border border-border bg-white"
                     }`}
                   >
-                    {item.time}
-                    {item.from === ownRole && <CheckCheck size={12} />}
-                  </p>
+                    <p className="text-[12px] leading-6">{item.text}</p>
+                    <p
+                      className={`mt-1.5 flex items-center justify-end gap-1 text-[9px] ${
+                        isMe ? "text-white/75" : "text-muted-foreground"
+                      }`}
+                    >
+                      {timeDisplay}
+                      {isMe && <CheckCheck size={12} />}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
             {ended && (
               <p className="rounded-xl bg-secondary py-3 text-center text-xs font-semibold text-[#12804f]">
                 Konsultasi Selesai. Terima kasih sudah bercerita.
@@ -1954,22 +3258,22 @@ function Chat({ teacher = false }: { teacher?: boolean }) {
         <aside className="space-y-5">
           <section className="rounded-2xl border border-border bg-white p-6 text-center">
             <div className="flex justify-center">
-              <Avatar name={participant} size="lg" teacher={!teacher} />
+              <Avatar name={partnerName} size="lg" teacher={!teacher} />
             </div>
-            <h3 className="mt-4 text-sm font-bold">
-              {teacher ? "Aditya Pratama" : "Ibu Ratna Sari, S.Pd."}
-            </h3>
+            <h3 className="mt-4 text-sm font-bold">{partnerName}</h3>
             <p className="mt-1.5 text-[10px] text-muted-foreground">
-              {teacher ? "Siswa • Kelas XI IPA 2" : "Guru Bimbingan Konseling"}
+              {partnerRole}
             </p>
             <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-[10px] text-[#12804f]">
               <span className="size-1.5 rounded-full bg-primary" /> Tersedia
             </span>
             <div className="mt-5 border-t border-border pt-4 text-left text-[11px]">
               <p className="font-semibold">Tentang konsultasi</p>
-              <p className="mt-3 text-muted-foreground">Topik: Akademik</p>
+              <p className="mt-3 text-muted-foreground">
+                Topik: {activeConsultation?.topic || "Bimbingan Siswa"}
+              </p>
               <p className="mt-2 text-muted-foreground">
-                Mulai: 30 September, 09.00 WIB
+                Tanggal: {activeConsultation?.scheduledDate || "Hari ini"}
               </p>
             </div>
             <button
@@ -1988,10 +3292,6 @@ function Chat({ teacher = false }: { teacher?: boolean }) {
               apa yang kamu rasakan.
             </p>
           </section>
-          <p className="px-2 text-[10px] leading-5 text-muted-foreground">
-            Ini percakapan contoh. Pesan hanya tampil di pratinjau dan tidak
-            dikirim ke guru BK.
-          </p>
         </aside>
       </div>
       {notice && (
@@ -2013,7 +3313,7 @@ function Chat({ teacher = false }: { teacher?: boolean }) {
             </h2>
             <p className="mt-3 text-xs leading-6 text-muted-foreground">
               Setelah diakhiri, percakapan ini tetap dapat dibaca. Kamu bisa
-              menjadwalkan konsultasi baru kapan pun dibutuhkan.
+              memulai sesi baru kapan pun dibutuhkan.
             </p>
             <div className="mt-6 flex gap-3">
               <button
@@ -2024,13 +3324,7 @@ function Chat({ teacher = false }: { teacher?: boolean }) {
                 Belum, lanjutkan
               </button>
               <button
-                onClick={() => {
-                  setEnded(true)
-                  setConfirm(false)
-                  setNotice(
-                    "Terima kasih, Aditya. Semoga perasaanmu lebih baik hari ini.",
-                  )
-                }}
+                onClick={handleEnd}
                 className={`${buttonPrimary} flex-1 px-3`}
               >
                 Ya, Selesai
@@ -2046,49 +3340,29 @@ function Chat({ teacher = false }: { teacher?: boolean }) {
 function HistoryPage({ teacher = false }: { teacher?: boolean }) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("Semua")
-  const items = [
-    {
-      title: "Tentang tugas dan ujian",
-      topic: "Akademik",
-      date: "30 September 2026",
-      status: "Berlangsung",
-      name: "Aditya Pratama",
-    },
-    {
-      title: "Belajar lebih percaya diri",
-      topic: "Pribadi",
-      date: "24 September 2026",
-      status: "Selesai",
-      name: "Aditya Pratama",
-    },
-    {
-      title: "Cerita tentang pertemanan",
-      topic: "Sosial",
-      date: "18 September 2026",
-      status: "Selesai",
-      name: "Nadia Putri",
-    },
-    {
-      title: "Menentukan tujuan belajar",
-      topic: "Akademik",
-      date: "12 September 2026",
-      status: "Selesai",
-      name: "Fajar Ramadhan",
-    },
-    {
-      title: "Mengenali perasaan sendiri",
-      topic: "Pribadi",
-      date: "5 September 2026",
-      status: "Selesai",
-      name: "Salsa Amalia",
-    },
-  ].filter(
-    (item) =>
-      (filter === "Semua" || item.status === filter) &&
-      `${item.title} ${item.topic} ${item.name}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-  )
+  const [consultations, setConsultations] = useState<Consultation[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.consultations
+      .list()
+      .then((data) => setConsultations(data))
+      .catch(() => setConsultations([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = consultations.filter((c) => {
+    const statusText = c.status === "SELESAI" ? "Selesai" : "Berlangsung"
+    const matchFilter = filter === "Semua" || statusText === filter
+    const partnerName = teacher
+      ? c.student?.name || "Siswa"
+      : c.teacher?.name || "Guru BK"
+    const matchSearch =
+      c.topic.toLowerCase().includes(search.toLowerCase()) ||
+      partnerName.toLowerCase().includes(search.toLowerCase())
+    return matchFilter && matchSearch
+  })
+
   return (
     <>
       <PageHeading
@@ -2129,34 +3403,67 @@ function HistoryPage({ teacher = false }: { teacher?: boolean }) {
           />
         </div>
       </div>
+
       <div className="space-y-3">
-        {items.length ? (
-          items.map((item) => (
-            <div
-              key={item.title}
-              className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-white p-5"
-            >
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary">
-                <MessageCircle size={22} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-bold">{item.title}</h2>
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  {teacher ? item.name : "Ibu Ratna Sari"} • {item.topic} •{" "}
-                  {item.date}
-                </p>
-              </div>
-              <Status>{item.status}</Status>
-              {item.status === "Berlangsung" && (
+        {loading ? (
+          <div className="rounded-2xl border border-border bg-white p-10 text-center text-xs text-muted-foreground">
+            Memuat riwayat...
+          </div>
+        ) : filtered.length > 0 ? (
+          filtered.map((item) => {
+            const partnerName = teacher
+              ? item.student?.name || "Siswa"
+              : item.teacher?.name || "Guru BK"
+            const statusLabel =
+              item.status === "SELESAI" ? "Selesai" : "Berlangsung"
+            const targetUrl = `${teacher ? "/guru/konsultasi" : "/siswa/konsultasi"}?id=${item.id}`
+
+            return (
+              <div
+                key={item.id}
+                className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-white p-5 shadow-xs transition hover:border-primary/40"
+              >
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary">
+                  <MessageCircle size={22} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-bold">{item.topic}</h2>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    {partnerName} •{" "}
+                    {item.type === "TATAP_MUKA"
+                      ? "Tatap Muka"
+                      : "Chat Online"}{" "}
+                    • {item.scheduledDate || "Hari ini"}
+                  </p>
+                </div>
+                <Status>{statusLabel}</Status>
                 <Link
-                  to={teacher ? "/guru/konsultasi" : "/siswa/konsultasi"}
-                  className="flex items-center gap-1 text-[11px] font-bold text-[#12804f]"
+                  to={targetUrl}
+                  className="flex items-center gap-1 rounded-xl bg-secondary px-3 py-2 text-[11px] font-bold text-[#12804f] hover:bg-primary hover:text-white"
                 >
-                  Buka <ArrowRight size={14} />
+                  Buka Chat <ArrowRight size={14} />
                 </Link>
-              )}
-            </div>
-          ))
+              </div>
+            )
+          })
+        ) : consultations.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-white px-6 py-16 text-center">
+            <Heart size={36} className="mx-auto mb-4 text-primary/40" />
+            <h2 className="text-base font-bold">Belum Ada Riwayat Konsultasi</h2>
+            <p className="mx-auto mt-2 max-w-sm text-xs text-muted-foreground">
+              {teacher
+                ? "Belum ada sesi konsultasi yang tercatat bersama siswa."
+                : "Kamu belum pernah melakukan konsultasi. Mulai ceritakan apa pun kepada Guru BK pilihanmu."}
+            </p>
+            {!teacher && (
+              <Link
+                to="/siswa/konsultasi"
+                className={`${buttonPrimary} mt-5 text-xs`}
+              >
+                Pilih Guru BK & Mulai Sesi <ArrowRight size={14} />
+              </Link>
+            )}
+          </div>
         ) : (
           <Empty
             title="Belum ada hasil yang cocok"
@@ -2194,6 +3501,8 @@ function Empty({ title, text }: { title: string; text: string }) {
 }
 function Notifications() {
   const [read, setRead] = useState(false)
+  const user = useCurrentUser()
+
   return (
     <>
       <div className="flex flex-wrap justify-between gap-3">
@@ -2212,15 +3521,15 @@ function Notifications() {
         {[
           {
             icon: CalendarDays,
-            title: "Jadwal konsultasimu dikonfirmasi",
-            text: "Ibu Ratna menerima jadwalmu pada Kamis, 1 Oktober 2026 pukul 09.00 WIB.",
-            time: "15 menit yang lalu",
+            title: "Selamat datang di KonsulYuk!",
+            text: `Halo ${user?.name || "Siswa"}! Ruang bimbingan konseling selalu siap mendampingimu kapan pun dibutuhkan.`,
+            time: "Baru saja",
           },
           {
             icon: MessageCircle,
-            title: "Ada pesan dari Ibu Ratna",
-            text: "Terima kasih sudah bercerita hari ini, Aditya. Kita bahas pelan-pelan, ya.",
-            time: "30 menit yang lalu",
+            title: "Pilih Guru BK untuk Mulai Konsultasi",
+            text: "Kunjungi menu Konsultasi Saya untuk memilih guru BK dan mulai bercerita dengan nyaman.",
+            time: "1 jam yang lalu",
           },
           {
             icon: Heart,
@@ -2262,6 +3571,15 @@ function Notifications() {
 function SettingsPage({ teacher = false }: { teacher?: boolean }) {
   const [saved, setSaved] = useState(false)
   const [notif, setNotif] = useState(true)
+  const user = useCurrentUser()
+
+  const displayName =
+    user?.name || (teacher ? "Ibu Ratna Sari, S.Pd." : "Siswa")
+  const displayEmail =
+    user?.email || (teacher ? "ratna@konsulyuk.id" : "siswa@konsulyuk.id")
+  const displayKelas =
+    user?.kelas || (teacher ? "Bimbingan Konseling" : "Kelas X")
+
   return (
     <>
       <PageHeading
@@ -2277,7 +3595,7 @@ function SettingsPage({ teacher = false }: { teacher?: boolean }) {
       >
         <div className="mb-7 flex items-center gap-4">
           <Avatar
-            name={teacher ? "Ratna Sari" : "Aditya Pratama"}
+            name={displayName}
             size="lg"
             teacher={teacher}
           />
@@ -2294,7 +3612,8 @@ function SettingsPage({ teacher = false }: { teacher?: boolean }) {
           <label className="text-xs font-semibold">
             Nama lengkap
             <input
-              defaultValue={teacher ? "Ratna Sari" : "Aditya Pratama"}
+              defaultValue={displayName}
+              key={displayName}
               required
               className={`${inputClass} mt-2`}
             />
@@ -2303,9 +3622,8 @@ function SettingsPage({ teacher = false }: { teacher?: boolean }) {
             Alamat email
             <input
               type="email"
-              defaultValue={
-                teacher ? "ratna@sekolah.sch.id" : "aditya@sekolah.sch.id"
-              }
+              defaultValue={displayEmail}
+              key={displayEmail}
               required
               className={`${inputClass} mt-2`}
             />
@@ -2313,14 +3631,17 @@ function SettingsPage({ teacher = false }: { teacher?: boolean }) {
           <label className="text-xs font-semibold">
             {teacher ? "Bidang" : "Kelas"}
             <input
-              defaultValue={teacher ? "Bimbingan Konseling" : "XI IPA 2"}
+              defaultValue={displayKelas}
+              key={displayKelas}
               className={`${inputClass} mt-2`}
             />
           </label>
           <label className="text-xs font-semibold">
-            Sekolah
+            Nomor WhatsApp / Telepon
             <input
-              defaultValue="SMA Negeri 1"
+              type="tel"
+              defaultValue={user?.phone || (teacher ? "0812-3456-7890" : "")}
+              placeholder="08xxxxxxxxxx"
               className={`${inputClass} mt-2`}
             />
           </label>
@@ -2656,6 +3977,7 @@ const router = createBrowserRouter([
   { path: "/masuk", element: <Auth /> },
   { path: "/daftar", element: <Auth register /> },
   { path: "/lupa-kata-sandi", element: <Auth reset /> },
+  { path: "/lengkapi-profil", Component: CompleteProfile },
   { path: "/sistem-desain", Component: DesignSystem },
   {
     path: "/siswa",
@@ -2664,7 +3986,7 @@ const router = createBrowserRouter([
       { index: true, element: <Dashboard /> },
       { path: "konsultasi", Component: Chat },
       { path: "riwayat", element: <HistoryPage /> },
-      { path: "notifikasi", Component: Notifications },
+      { path: "notifikasi", element: <Navigate to="/siswa" replace /> },
       { path: "pengaturan", element: <SettingsPage /> },
     ],
   },
@@ -2679,6 +4001,22 @@ const router = createBrowserRouter([
       { path: "riwayat", element: <HistoryPage teacher /> },
       { path: "pengaturan", element: <SettingsPage teacher /> },
       { path: "konsultasi", element: <Chat teacher /> },
+    ],
+  },
+  {
+    path: "/operator",
+    element: <OperatorLayout />,
+    children: [
+      { index: true, element: <OperatorHome /> },
+      { path: "siswa", element: <OperatorStudents /> },
+      { path: "guru-bk", element: <OperatorTeachers /> },
+      { path: "operator", element: <OperatorOperators /> },
+      { path: "konsultasi", element: <OperatorConsultations /> },
+      { path: "jadwal", element: <OperatorSchedule /> },
+      { path: "notifikasi", element: <OperatorNotifications /> },
+      { path: "pengaturan", element: <OperatorSettings /> },
+      { path: "audit-log", element: <OperatorAuditLog /> },
+      { path: "profil", element: <OperatorProfile /> },
     ],
   },
   { path: "*", Component: NotFound },

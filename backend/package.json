@@ -1,0 +1,35 @@
+{
+  "name": "konsulyuk-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "deno run -A --watch src/index.ts",
+    "start": "deno run -A src/index.ts",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop konsulyuk-backend",
+    "pm2:restart": "pm2 restart konsulyuk-backend",
+    "pm2:reload": "pm2 reload konsulyuk-backend",
+    "pm2:logs": "pm2 logs konsulyuk-backend",
+    "pm2:status": "pm2 status",
+    "pm2:delete": "pm2 delete konsulyuk-backend",
+    "db:push": "deno run -A npm:prisma db push",
+    "db:seed": "deno run -A prisma/seed.ts",
+    "db:studio": "deno run -A npm:prisma studio",
+    "bun:dev": "bun --watch src/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.4.7",
+    "hono": "^4.13.11",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.13.10",
+    "prisma": "^6.19.3",
+    "typescript": "^5.7.3"
+  }
+}

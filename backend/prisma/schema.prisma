@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SISWA
+  GURU
+  ADMIN
+}
+
+enum UserStatus {
+  AKTIF
+  NONAKTIF
+  DITANGGUHKAN
+}
+
+enum ConsultationType {
+  CHAT
+  TATAP_MUKA
+}
+
+enum ConsultationStatus {
+  MENUNGGU
+  DITERIMA
+  DITOLAK
+  SELESAI
+  DIBATALKAN
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         Role       @default(SISWA)
+  status       UserStatus @default(AKTIF)
+  kelas        String?
+  nisn         String?
+  nip          String?
+  phone        String?
+  avatar       String?
+  bio          String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  consultationsAsStudent Consultation[]    @relation("StudentConsultations")
+  consultationsAsTeacher Consultation[]    @relation("TeacherConsultations")
+  sentMessages           Message[]         @relation("SentMessages")
+  notifications          Notification[]
+  schedules              TeacherSchedule[]
+  auditLogs              AuditLog[]
+
+  @@map("users")
+}
+
+model Consultation {
+  id            String             @id @default(cuid())
+  studentId     String
+  teacherId     String?
+  topic         String
+  type          ConsultationType   @default(CHAT)
+  status        ConsultationStatus @default(MENUNGGU)
+  scheduledDate String
+  scheduledTime String
+  studentNotes  String?
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  student  User      @relation("StudentConsultations", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher  User?     @relation("TeacherConsultations", fields: [teacherId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@map("consultations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  consultationId String
+  senderId       String
+  senderRole     String
+  text           String
+  createdAt      DateTime     @default(now())
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("SYSTEM")
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model TeacherSchedule {
+  id          String   @id @default(cuid())
+  teacherId   String
+  day         String
+  timeSlot    String
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  teacher User @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("teacher_schedules")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  target    String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}

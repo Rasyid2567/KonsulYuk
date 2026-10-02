@@ -1,0 +1,15 @@
+{
+  "tasks": {
+    "dev": "deno run -A --watch src/index.ts",
+    "start": "deno run -A src/index.ts",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop konsulyuk-backend",
+    "pm2:restart": "pm2 restart konsulyuk-backend",
+    "pm2:logs": "pm2 logs konsulyuk-backend",
+    "pm2:status": "pm2 status",
+    "db:push": "deno run -A npm:prisma db push",
+    "db:seed": "deno run -A prisma/seed.ts",
+    "db:studio": "deno run -A npm:prisma studio"
+  },
+  "unstable": ["sloppy-imports"]
+}
